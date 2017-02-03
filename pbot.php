@@ -27,26 +27,61 @@ $loop = Factory::create();
 
 $client = new RealTimeClient($loop);
 
-$cache = new DoctrineCache(new FilesystemCache(__DIR__.$config['cache_dir']));
+$cache = new DoctrineCache(new FilesystemCache(__DIR__.'/'.$config['cache_dir']));
 
-$storage = new FileStorage(__DIR__.$config['storage_dir']);
+$storage = new FileStorage(__DIR__.'/'.$config['storage_dir']);
 
 $bot = BotManFactory::createUsingRTM($config, $client, $cache, $storage);
 
-$bot->hears('hey', function (BotMan $bot) use ($twitter) {
-    $userId = $bot->getMessage()->getUser();
-    $bot->reply('I heard you! :) <@' . $userId . '>');
-    $res = $twitter->get('favorites/list.json');
-    $list = $res->getBody()->getContents();
-    $bot->reply("LIST: $list");
+$bot->hears('favs', function (BotMan $bot) use ($twitter) {
+    $rsp = $twitter->get('favorites/list.json');
+    $list = GuzzleHttp\json_decode($rsp->getBody());
+    $favs = [];
+    foreach ($list as $fav) {
+        $favs[] = sprintf(
+            'https://twitter.com/%s/status/%s',
+            $fav->user->screen_name,
+            $fav->id_str
+        );
+    }
+    $bot->reply(join("\n", $favs));
 });
 
-//$loop->addPeriodicTimer(10, function() use ($bot, $client, $twitter) {
-//    $client->getChannelByName('general')->then(function ($channel) use ($bot, $twitter) {
-//        $res = $twitter->get('favorites/list.json');
-//        $bot->say($res, $channel->getId());
-//    });
-//});
+$update = function() use ($twitter, $storage, $bot, $client) {
+    $last = $storage->get('last_fav');
+    $lastUrl = isset($last['url']) ? $last['url'] : null;
+    $rsp = $twitter->get('favorites/list.json');
+    $list = GuzzleHttp\json_decode($rsp->getBody());
+    $favs = [];
+    $url = null;
+    foreach ($list as $fav) {
+        $url = sprintf(
+            'https://twitter.com/%s/status/%s',
+            $fav->user->screen_name,
+            $fav->id_str
+        );
+        if ($url == $lastUrl) {
+            break;
+        }
+        $favs[] = $url;
+    }
+    if ($url) {
+        $storage->save(['url'=>$url], 'last_fav');
+    }
+
+    if ($favs) {
+        $favs = array_reverse($favs);
+        $client->getChannelByName('general')->then(function ($channel) use ($bot, $favs) {
+            $bot->say(join("\n", $favs), $channel->getId());
+        });
+    }
+};
+
+$loop->addPeriodicTimer(60, function() use ($update) {
+    echo "tick\n";
+    $update();
+});
 
 $loop->run();
 
+// https://twitter.com/PostOpinions/status/827504414650941442
