@@ -1,13 +1,21 @@
 <?php
 
 $config = [
-    'slack_token' => 'your-slack-api-token-goes-here';
+    'bot' => [
+        'slack_token' => 'your-slack-api-token-goes-here',
+    ],
     'storage_dir' => 'storage',
     'cache_dir' => 'cache',
-    'twitter_oauth' => [
-        'consumer_key'    => 'twitter-consumer-key',
-        'consumer_secret' => 'twitter-consumer-secret',
-        'token'           => 'twitter-application-token',
-        'token_secret'    => 'twitter-application-secret'
+    'twitter' => [
+        'oauth' => [
+            'consumer_key'    => 'twitter-consumer-key',
+            'consumer_secret' => 'twitter-consumer-secret',
+            'token'           => 'twitter-application-token',
+            'token_secret'    => 'twitter-application-secret',
+        ],
+    ],
+    'http_server' => [
+        'port' => 13337,
     ],
 ];
+
