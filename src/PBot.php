@@ -116,6 +116,7 @@ class PBot
         $this->i++;
 
         $text = "This is request number $this->i.\n";
+        $text .= $request->getPath()."\n";
 
         $this->bot->say($text, $this->channelId);
 
