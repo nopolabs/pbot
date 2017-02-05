@@ -17,5 +17,8 @@ $config = [
     'http_server' => [
         'port' => 13337,
     ],
+    'github' => [
+        'secret' => 'github-secret-goes-here',
+    ],
 ];
 
