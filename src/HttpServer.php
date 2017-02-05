@@ -19,9 +19,11 @@ class HttpServer
         $this->http = new Server($this->socket);
     }
 
-    public function init($app)
+    public function init($app, $httpError, $socketError)
     {
         $this->http->on('request', $app);
+        $this->http->on('error', $httpError);
+        $this->socket->on('error', $socketError);
 
         $port = $this->config['port'];
         $this->socket->listen($port);

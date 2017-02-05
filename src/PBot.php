@@ -44,9 +44,19 @@ class PBot
 
     public function init()
     {
-        $this->httpServer->init(function (HttpRequest $request, HttpResponse $response) {
-            $this->app($request, $response);
-        });
+        $this->httpServer->init(
+            function (HttpRequest $request, HttpResponse $response) {
+                $this->app($request, $response);
+            },
+            function (\Exception $exception) {
+                echo $exception->getMessage()."\n";
+                echo $exception->getTraceAsString()."\n";
+            },
+            function (\Exception $exception) {
+                echo $exception->getMessage()."\n";
+                echo $exception->getTraceAsString()."\n";
+            }
+        );
 
         $this->bot->hears('favs', function (BotMan $bot) {
             $favs = $this->getFavs();
@@ -67,7 +77,6 @@ class PBot
 
     public function run()
     {
-
         $this->loop->run();
     }
 
@@ -126,10 +135,9 @@ class PBot
 
         $sink = new BufferedSink();
         $request->pipe($sink);
-        $sink->promise()->then(function ($data) use ($response) {
-            $this->bot->say($data, $this->channelId);
-
-            $response->end();
+        $sink->promise()->then(function ($data) {
+            echo "$data\n";
         });
+        $response->end();
     }
 }
