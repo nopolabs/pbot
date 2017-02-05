@@ -118,17 +118,18 @@ class PBot
         $text = "This is request number $this->i.\n";
         $text .= $request->getPath()."\n";
 
+        $headers = array('Content-Type' => 'text/plain');
+        $response->writeHead(200, $headers);
+        $response->write($text);
+
         $this->bot->say($text, $this->channelId);
 
         $sink = new BufferedSink();
         $request->pipe($sink);
-        $sink->promise()->then(function ($data) {
+        $sink->promise()->then(function ($data) use ($response) {
             $this->bot->say($data, $this->channelId);
-        });
 
-        $headers = array('Content-Type' => 'text/plain');
-        $response->writeHead(200, $headers);
-        $response->write($text);
-        $response->end();
+            $response->end();
+        });
     }
 }
