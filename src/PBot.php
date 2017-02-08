@@ -135,9 +135,9 @@ class PBot
 
         $sink = new BufferedSink();
         $request->pipe($sink);
-        $sink->promise()->then(function ($data) {
+        $sink->promise()->then(function ($data) use ($response) {
             echo "$data\n";
+            $response->end();
         });
-        $response->end();
     }
 }

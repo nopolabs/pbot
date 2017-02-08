@@ -1,12 +1,13 @@
 {
+  "minimum-stability": "dev",
   "require": {
-    "mpociot/slack-client": "^0.2.6",
+    "coderstephen/slack-client": "dev-master",
     "doctrine/cache": "^1.6",
+    "devristo/phpws": "dev-master",
     "mpociot/botman": "dev-master",
     "guzzlehttp/oauth-subscriber": "^0.3.0",
     "guzzlehttp/guzzle": "~6.0",
-    "phpunit/phpunit": "^6.0",
-    "react/react": "^0.4.2"
+    "react/react": "dev-master"
   },
   "autoload": {
     "psr-4": {
@@ -17,5 +18,14 @@
     "psr-4": {
       "PBot\\": "tests/"
     }
-  }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^6.0"
+  },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url":  "git@github.com:nopolabs/phpws.git"
+    }
+  ]
 }
