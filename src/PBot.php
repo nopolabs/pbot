@@ -2,17 +2,13 @@
 namespace PBot;
 
 use Doctrine\Common\Cache\FilesystemCache;
-use GuzzleHttp;
 use Mpociot\BotMan\BotMan;
 use Mpociot\BotMan\BotManFactory;
 use Mpociot\BotMan\Cache\DoctrineCache;
 use Mpociot\BotMan\Storages\Drivers\FileStorage;
 use React\EventLoop\Factory;
 use React\EventLoop\Timer\Timer;
-use React\Stream\BufferedSink;
 use Slack\RealTimeClient;
-use React\Http\Request as HttpRequest;
-use React\Http\Response as HttpResponse;
 
 class PBot
 {
@@ -38,29 +34,21 @@ class PBot
         $this->bot = BotManFactory::createUsingRTM($config['bot'], $this->client, $this->cache, $this->storage);
 
         $this->twitter = new Twitter($config['twitter']);
-
-        $this->httpServer = new HttpServer($config['http_server'], $this->loop);
     }
 
     public function init()
     {
-        $this->httpServer->init(
-            function (HttpRequest $request, HttpResponse $response) {
-                $this->app($request, $response);
-            },
-            function (\Exception $exception) {
-                echo $exception->getMessage()."\n";
-                echo $exception->getTraceAsString()."\n";
-            },
-            function (\Exception $exception) {
-                echo $exception->getMessage()."\n";
-                echo $exception->getTraceAsString()."\n";
-            }
-        );
+        $this->bot->hears('last', function (BotMan $bot) {
+            $last = $this->storage->get('last_fav');
 
-        $this->bot->hears('favs', function (BotMan $bot) {
-            $favs = $this->getFavs();
-            $bot->reply(join("\n", $favs));
+            $user = '<@' . $bot->getMessage()->getUser() . '>';
+
+            if ($last['url']) {
+                $favorite = '<' . $last['url'] . '|favorite>';
+                $bot->reply($user . ' This was your last ' . $favorite . '.');
+            } else {
+                $bot->reply($user . ' I do not know your last favorite.');
+            }
         });
 
         $this->loop->addPeriodicTimer(300, function() {
@@ -84,7 +72,7 @@ class PBot
     {
         $last = $this->storage->get('last_fav');
         $lastFav = isset($last['url']) ? $last['url'] : null;
-        $favs = $this->getFavs();
+        $favs = $this->twitter->getFavs();
         $newFavs = [];
         $fav = null;
         foreach ($favs as $fav) {
@@ -103,41 +91,5 @@ class PBot
                 $this->bot->say(join("\n", array_reverse($newFavs)), $this->channelId);
             }
         }
-    }
-
-    public function getFavs() : array
-    {
-        $rsp = $this->twitter->get('favorites/list.json');
-        $list = GuzzleHttp\json_decode($rsp->getBody());
-        $favs = [];
-        foreach ($list as $fav) {
-            $favs[] = sprintf(
-                'https://twitter.com/%s/status/%s',
-                $fav->user->screen_name,
-                $fav->id_str
-            );
-        }
-        return $favs;
-    }
-
-    public function app(HttpRequest $request, HttpResponse $response)
-    {
-        $this->i++;
-
-        $text = "This is request number $this->i.\n";
-        $text .= $request->getPath()."\n";
-
-        $headers = array('Content-Type' => 'text/plain');
-        $response->writeHead(200, $headers);
-        $response->write($text);
-
-        $this->bot->say($text, $this->channelId);
-
-        $sink = new BufferedSink();
-        $request->pipe($sink);
-        $sink->promise()->then(function ($data) use ($response) {
-            echo "$data\n";
-            $response->end();
-        });
     }
 }

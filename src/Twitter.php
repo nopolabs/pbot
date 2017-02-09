@@ -1,6 +1,7 @@
 <?php
 namespace PBot;
 
+use GuzzleHttp;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Subscriber\Oauth\Oauth1;
@@ -22,7 +23,22 @@ class Twitter
         ]);
     }
 
-    public function get($uri)
+    public function getFavs() : array
+    {
+        $rsp = $this->get('favorites/list.json');
+        $list = GuzzleHttp\json_decode($rsp->getBody());
+        $favs = [];
+        foreach ($list as $fav) {
+            $favs[] = sprintf(
+                'https://twitter.com/%s/status/%s',
+                $fav->user->screen_name,
+                $fav->id_str
+            );
+        }
+        return $favs;
+    }
+
+    protected function get($uri)
     {
         return $this->client->get($uri);
     }
